@@ -1,0 +1,5 @@
+---
+- hosts: all
+  tasks:
+  - name: Install tomcat
+    unarchive: src=apache-tomcat-7.0.79.tar.gz dest=/opt

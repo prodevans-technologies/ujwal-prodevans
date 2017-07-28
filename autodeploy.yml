@@ -1,0 +1,65 @@
+---
+- hosts: all
+  tasks:
+  - name: Add Jenkins key to the VM
+    copy:
+      content: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyNB7f0m8C5wvbAU4a6X7LNMPHHhSejcw4F4jlMB/6JmV0hm94LgDAiBRDmB7KyLrSxzKXLUS5rcJSOhYo9ns5mjA3CLJFJVAef6o83okaJhibL2VgPsqx+lhhCeAeoyDPQYYyLDOXacdrL+MZMPfrpCM6QPrTRKw5fNLSp0vGet5RtPW7BVCO7hrbEDARMJsipOL6NAHMJ5NNPgzQVjvY+QjBamFUeyGEe+pbA51ieu3Y0QSK63V+291tLxV0ZaakiHPtbNSznPAUxpfGChpFgcgEyr/f882fihHYCc/DeBPO+6LCzgN5SAhakOSduvGFt49ayvoEOKRxaPPiSoFJ jenkins@Forge-CICDMaster001
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChUlevaetQUGqi5unCmF1fMsOwOUQ8hq18ginTUreSYSYYTUD57mwt8jdKK+F5lD7LLqKTxMii4PZkIq+77OP7nnFgJud/S9vtXon6YKgUIyIg+4iHLlhpgta7/CS2kY3oTgIAc45Rzzc31O5u9uxnPciLPzFGzM/amy0C/mULSHMVSZI7NJSvB1pOg2qveYMr4RfB9VpbcIyDpxKmhgn6EZwXk7JksvDe1bvag036Yse0cd9cdOjQdOjgWbdFJj5w5ZwGiq6vyj0ruGZmzPM70+vqArEmKG0V6SPpMPRIu98ghZIheEMiyV88dz3AHQ2lEIcqIP+CZgoxsUyoEqUJ devopsuser@Forge-AnsibleTower001"
+      dest: /home/azureuser/.ssh/authorized_keys
+    tags:
+      - common
+  - name: Create .ssh directory
+    file:
+      path: /root/.ssh
+      state: directory
+    tags:
+      - common
+  
+  - name: Add Jenkins key to root user of the VM
+    copy:
+      content: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyNB7f0m8C5wvbAU4a6X7LNMPHHhSejcw4F4jlMB/6JmV0hm94LgDAiBRDmB7KyLrSxzKXLUS5rcJSOhYo9ns5mjA3CLJFJVAef6o83okaJhibL2VgPsqx+lhhCeAeoyDPQYYyLDOXacdrL+MZMPfrpCM6QPrTRKw5fNLSp0vGet5RtPW7BVCO7hrbEDARMJsipOL6NAHMJ5NNPgzQVjvY+QjBamFUeyGEe+pbA51ieu3Y0QSK63V+291tLxV0ZaakiHPtbNSznPAUxpfGChpFgcgEyr/f882fihHYCc/DeBPO+6LCzgN5SAhakOSduvGFt49ayvoEOKRxaPPiSoFJ jenkins@Forge-CICDMaster001"
+      dest: /root/.ssh/authorized_keys
+    tags:
+      - common
+  
+  - name: Adding sudo privileges azureuser
+    lineinfile:
+      dest: /etc/sudoers.d/azureuser
+      state: present
+      create: yes
+      line: "azureuser ALL=(ALL) NOPASSWD: ALL"
+    tags:
+      - common
+  
+  - name: Remove waagent file
+    file:
+      path: /etc/sudoers.d/waagent
+      state: absent  
+    tags:
+      - common
+
+  - name: Change tomcat port for Dev
+    lineinfile:
+       path: /etc/tomcat/server.xml
+       regexp: '<Connector port="8080" protocol="HTTP/1.1"'
+       line: '<Connector port="8081" protocol="HTTP/1.1"'
+    tags:
+       - dev
+    notify:
+       - restart tomcat
+    
+  - name: Change tomcat port for Stage
+    lineinfile:
+       path: /etc/tomcat/server.xml
+       regexp: '<Connector port="8080" protocol="HTTP/1.1"'
+       line: '<Connector port="8082" protocol="HTTP/1.1"'
+    tags: stage
+    notify:
+       - restart tomcat
+     
+  handlers:
+    - name: restart tomcat
+      service:
+        name: tomcat
+        state: restarted
+
